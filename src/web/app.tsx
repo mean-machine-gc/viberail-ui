@@ -25,6 +25,47 @@ const NAV_ITEMS: Array<{ view: View; label: string; icon: typeof Graph }> = [
     { view: 'diff', label: 'Spec Diff', icon: GitDiff },
 ]
 
+function VibeRailLogo({ size = 55 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="-70 10 396 246" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* === Circuit traces — left side === */}
+            {/* Top — kinks up */}
+            <polyline points="40,80 18,80 2,68 -30,68" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <circle cx="-36" cy="68" r="14" fill="currentColor" />
+            {/* Middle — straight out, longer */}
+            <polyline points="40,120 -46,120" stroke="currentColor" strokeWidth="16" strokeLinecap="round" fill="none" />
+            <circle cx="-52" cy="120" r="16" fill="currentColor" />
+            {/* Bottom — kinks down (mirrors top) */}
+            <polyline points="40,160 18,160 2,172 -30,172" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <circle cx="-36" cy="172" r="14" fill="currentColor" />
+
+            {/* === Circuit traces — right side === */}
+            {/* Top — kinks up */}
+            <polyline points="216,80 238,80 254,68 286,68" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <circle cx="292" cy="68" r="14" fill="currentColor" />
+            {/* Middle — straight out, longer */}
+            <polyline points="216,120 302,120" stroke="currentColor" strokeWidth="16" strokeLinecap="round" fill="none" />
+            <circle cx="308" cy="120" r="16" fill="currentColor" />
+            {/* Bottom — kinks down (mirrors top) */}
+            <polyline points="216,160 238,160 254,172 286,172" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <circle cx="292" cy="172" r="14" fill="currentColor" />
+
+            {/* Visor band */}
+            <path d="M208,72v56H48V72Z" fill="currentColor" opacity="0.15" />
+
+            {/* Train body — Phosphor Train duotone outline (no eyes/smile) */}
+            <path
+                d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24Z
+                 M56,120V80h64v40Z m80-40h64v40H136Z
+                 M72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40Z
+                 M184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200Z
+                 M96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Z m88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"
+                fill="currentColor"
+            />
+        </svg>
+    )
+}
+
 function ColorSchemeToggle() {
     const { colorScheme, toggleColorScheme } = useMantineColorScheme()
     return (
@@ -51,17 +92,33 @@ function App() {
 
     return (
         <AppShell
+            header={{ height: 50 }}
             navbar={{ width: 220, breakpoint: 0 }}
             padding={0}
         >
-            <AppShell.Navbar p="sm">
-                <AppShell.Section>
-                    <Group justify="space-between" mb="sm" px="xs">
-                        <Text fw={700} c="blue" size="sm">viberail-ui</Text>
-                        <ColorSchemeToggle />
+            <AppShell.Header>
+                <Group justify="space-between" h="100%" px="md">
+                    <Group gap={6} align="center">
+                        <VibeRailLogo />
+                        <Text
+                            component="span"
+                            ff="monospace"
+                            fw={800}
+                            size="lg"
+                            style={{ letterSpacing: '-0.5px' }}
+                        >
+                            <span style={{ color: 'var(--mantine-color-violet-5)' }}>Vibe</span>
+                            <span style={{ color: 'var(--mantine-color-cyan-5)' }}>Rail</span>
+                        </Text>
+                        <Text component="span" size="xs" c="dimmed" fw={500}>
+                            UI
+                        </Text>
                     </Group>
-                </AppShell.Section>
+                    <ColorSchemeToggle />
+                </Group>
+            </AppShell.Header>
 
+            <AppShell.Navbar p="sm">
                 <AppShell.Section grow>
                     {NAV_ITEMS.map(({ view: v, label, icon: Icon }) => (
                         <NavLink
