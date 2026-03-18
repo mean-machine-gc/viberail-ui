@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSpecRevision } from '../hooks/useSpecRevision'
 
 type CheckResult = {
     specFile: string
@@ -18,13 +19,14 @@ export function AnalysisPanel() {
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState<'all' | 'error' | 'warning'>('all')
     const [checkFilter, setCheckFilter] = useState<string>('all')
+    const revision = useSpecRevision()
 
     useEffect(() => {
         fetch('/api/analysis')
             .then(r => r.json())
             .then(d => { setData(d); setLoading(false) })
             .catch(() => setLoading(false))
-    }, [])
+    }, [revision])
 
     if (loading) return <div style={{ padding: 32, color: '#8b949e' }}>Running checks...</div>
     if (!data) return <div style={{ padding: 32, color: '#f85149' }}>Failed to load analysis</div>

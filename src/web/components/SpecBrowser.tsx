@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSpecRevision } from '../hooks/useSpecRevision'
 
 type SerializedSpec = {
     exportName: string
@@ -35,13 +36,14 @@ export function SpecBrowser({ onSelectSpec }: { onSelectSpec: (name: string) => 
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+    const revision = useSpecRevision()
 
     useEffect(() => {
         fetch('/api/specs')
             .then(r => r.json())
             .then(d => { setSpecs(d.specs || []); setLoading(false) })
             .catch(() => setLoading(false))
-    }, [])
+    }, [revision])
 
     if (loading) return <div style={{ padding: 32, color: '#8b949e' }}>Loading specs...</div>
 

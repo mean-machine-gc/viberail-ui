@@ -2,8 +2,8 @@ import type { Plugin, ViteDevServer } from 'vite'
 import type { SpecAnalysis, LoadedSpec } from 'viberail'
 import { analyzeSpecs } from 'viberail'
 import { globSync } from 'glob'
-import { resolve, basename } from 'path'
-import { readFileSync, existsSync, symlinkSync, rmSync } from 'fs'
+import { resolve, basename, join } from 'path'
+import { readFileSync, existsSync, symlinkSync, rmSync, watch } from 'fs'
 import { execSync } from 'child_process'
 import { tmpdir } from 'os'
 import { fileURLToPath } from 'url'
@@ -97,6 +97,24 @@ export function viberailApi(opts: { folder: string }): Plugin {
             console.log(`Loading specs from: ${opts.folder}`)
             analysis = await loadSpecsViaVite(server, opts.folder)
             console.log(`Loaded ${analysis.specs.length} specs`)
+
+            // Watch for .spec.ts changes and auto-reload
+            const specDir = join(opts.folder, 'src/domain')
+            if (existsSync(specDir)) {
+                let reloadTimer: ReturnType<typeof setTimeout> | null = null
+                watch(specDir, { recursive: true }, (_event, filename) => {
+                    if (!filename || !filename.endsWith('.spec.ts')) return
+                    if (reloadTimer) clearTimeout(reloadTimer)
+                    reloadTimer = setTimeout(async () => {
+                        reloadTimer = null
+                        console.log(`Spec changed: ${filename} — reloading…`)
+                        server.moduleGraph.invalidateAll()
+                        analysis = await loadSpecsViaVite(server, opts.folder)
+                        console.log(`Reloaded ${analysis.specs.length} specs`)
+                        server.ws.send({ type: 'custom', event: 'viberail:specs-updated' })
+                    }, 300)
+                })
+            }
 
             server.middlewares.use('/api/specs', (_req, res) => {
                 const specs = analysis.specs.map(serializeSpec)

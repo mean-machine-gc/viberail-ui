@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSpecRevision } from '../hooks/useSpecRevision'
 import type { Core } from 'cytoscape'
 
 type GraphNode = { id: string; name: string; specPath: string; domain: string; edgeCount: number }
@@ -26,6 +27,7 @@ export function DependencyGraph({ onSelectSpec, onSpecCount }: {
     const [data, setData] = useState<GraphData | null>(null)
     const [loading, setLoading] = useState(true)
     const [domains, setDomains] = useState<string[]>([])
+    const revision = useSpecRevision()
 
     useEffect(() => {
         fetch('/api/graph')
@@ -41,7 +43,7 @@ export function DependencyGraph({ onSelectSpec, onSpecCount }: {
                 console.error('Failed to load graph:', err)
                 setLoading(false)
             })
-    }, [])
+    }, [revision])
 
     useEffect(() => {
         if (!data || !containerRef.current) return

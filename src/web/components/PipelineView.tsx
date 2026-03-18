@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSpecRevision } from '../hooks/useSpecRevision'
 
 type SerializedSpec = {
     exportName: string
@@ -14,13 +15,14 @@ export function PipelineView({ onSelectSpec }: { onSelectSpec: (name: string) =>
     const [specs, setSpecs] = useState<SerializedSpec[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedPipeline, setSelectedPipeline] = useState<string | null>(null)
+    const revision = useSpecRevision()
 
     useEffect(() => {
         fetch('/api/specs')
             .then(r => r.json())
             .then((d: SpecsData) => { setSpecs(d.specs); setLoading(false) })
             .catch(() => setLoading(false))
-    }, [])
+    }, [revision])
 
     if (loading) return <div style={{ padding: 32, color: '#8b949e' }}>Loading pipelines...</div>
 

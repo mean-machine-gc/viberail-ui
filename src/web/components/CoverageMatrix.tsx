@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSpecRevision } from '../hooks/useSpecRevision'
 
 type SerializedSpec = {
     exportName: string
@@ -17,13 +18,14 @@ export function CoverageMatrix({ onSelectSpec }: { onSelectSpec: (name: string) 
     const [loading, setLoading] = useState(true)
     const [hoveredCell, setHoveredCell] = useState<{ spec: string; group: string; kind: string } | null>(null)
     const [showOnly, setShowOnly] = useState<'all' | 'gaps'>('all')
+    const revision = useSpecRevision()
 
     useEffect(() => {
         fetch('/api/specs')
             .then(r => r.json())
             .then((d: SpecsData) => { setSpecs(d.specs); setLoading(false) })
             .catch(() => setLoading(false))
-    }, [])
+    }, [revision])
 
     if (loading) return <div style={{ padding: 32, color: '#8b949e' }}>Loading coverage matrix...</div>
 
