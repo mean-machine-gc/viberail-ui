@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Paper, Group, Badge, Button, Text, Code, Stack, Loader, Title, Collapse, UnstyledButton, Table, useMantineTheme } from '@mantine/core'
-import { ArrowLeft, CaretRight } from '@phosphor-icons/react'
+import { CaretRight } from '@phosphor-icons/react'
 import { DecisionTable } from './DecisionTable'
 import { useDiagramColors } from '../hooks/useDiagramColors'
 
@@ -54,10 +54,8 @@ export function SpecPage({ specName, onBack }: { specName: string; onBack: () =>
     }
 
     return (
-        <div style={{ padding: '32px 48px', maxWidth: 840, margin: '0 auto' }}>
-            <Button variant="subtle" size="xs" leftSection={<ArrowLeft size={14} />} onClick={onBack}>Back</Button>
-
-            <Title order={2} mt="sm" mb={4}>{humanize(spec.exportName)}</Title>
+        <div>
+            <Title order={3} mb={4}>{humanize(spec.exportName)}</Title>
             <Text size="sm" c="dimmed" ff="monospace" mb="sm">{spec.modulePath}</Text>
 
             <Group gap="xs" mb="lg" wrap="wrap">

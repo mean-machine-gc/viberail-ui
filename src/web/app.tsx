@@ -1,7 +1,7 @@
 import '@mantine/core/styles.css'
 import { createRoot } from 'react-dom/client'
 import { useState } from 'react'
-import { MantineProvider, AppShell, NavLink, Text, ActionIcon, Group, useMantineColorScheme } from '@mantine/core'
+import { MantineProvider, AppShell, NavLink, Text, ActionIcon, Group, useMantineColorScheme, CloseButton } from '@mantine/core'
 import { Sun, Moon, Graph, ListBullets, GitDiff, ChartBar, FlowArrow, TestTube, Table } from '@phosphor-icons/react'
 import { theme } from './theme'
 import { DependencyGraph } from './components/DependencyGraph'
@@ -82,12 +82,10 @@ function App() {
 
     const selectSpec = (name: string) => {
         setSelectedSpec(name)
-        setView('specs')
     }
 
     const navigate = (v: View) => {
         setView(v)
-        setSelectedSpec(null)
     }
 
     return (
@@ -142,11 +140,21 @@ function App() {
             </AppShell.Navbar>
 
             <AppShell.Main style={{ height: '100vh', overflow: 'auto' }}>
-                {view === 'specs' && selectedSpec && (
-                    <SpecPage specName={selectedSpec} onBack={() => setSelectedSpec(null)} />
-                )}
-                {view === 'specs' && !selectedSpec && (
-                    <SpecBrowser onSelectSpec={selectSpec} />
+                {view === 'specs' && (
+                    <div style={{ display: 'flex', height: '100%', minHeight: 0 }}>
+                        <div style={{ width: selectedSpec ? '30%' : '100%', minWidth: 280, overflow: 'auto', flexShrink: 0, borderRight: selectedSpec ? '1px solid var(--mantine-color-default-border)' : undefined }}>
+                            <SpecBrowser onSelectSpec={selectSpec} />
+                        </div>
+                        {selectedSpec && (
+                            <div style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 24 }}>
+                                <Group justify="space-between" mb="md">
+                                    <Text ff="monospace" fw={600} size="sm">{selectedSpec}</Text>
+                                    <CloseButton onClick={() => setSelectedSpec(null)} />
+                                </Group>
+                                <SpecPage specName={selectedSpec} onBack={() => setSelectedSpec(null)} />
+                            </div>
+                        )}
+                    </div>
                 )}
                 {view === 'graph' && (
                     <DependencyGraph onSelectSpec={selectSpec} onSpecCount={setSpecCount} />
