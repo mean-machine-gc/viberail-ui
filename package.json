@@ -1,15 +1,42 @@
 {
   "name": "viberail-ui",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Interactive visual workbench for viberail specifications",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/mean-machine-gc/viberail-ui.git"
+  },
+  "homepage": "https://github.com/mean-machine-gc/viberail-ui#readme",
+  "bugs": {
+    "url": "https://github.com/mean-machine-gc/viberail-ui/issues"
+  },
   "bin": {
     "viberail-ui": "./dist/cli.js"
   },
+  "files": [
+    "dist/",
+    "src/",
+    "vite.config.ts",
+    "tsconfig.json"
+  ],
+  "keywords": [
+    "viberail",
+    "specifications",
+    "decision-table",
+    "testing",
+    "visualization",
+    "workbench"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && tsc --project tsconfig.cli.json",
     "dev": "VIBEGUARD_FOLDER=../mediator-example vite",
-    "start": "tsx src/cli.ts"
+    "start": "tsx src/cli.ts",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "glob": "^13.0.6",
