@@ -1,3 +1,5 @@
+import { Table, Badge, Text } from '@mantine/core'
+
 type Step = { name: string; type: string; description: string; handlers?: string[] }
 type FailGroup = { description: string; exampleCount: number; examples: Array<{ description: string }>; coveredBy?: string }
 type SuccessGroup = { description: string; exampleCount: number; examples: Array<{ description: string }> }
@@ -21,19 +23,11 @@ function buildRows(props: Props): Row[] {
     const stepNames = (steps || []).map(s => s.name)
     const rows: Row[] = []
 
-    // Failure rows
     for (const [code, group] of Object.entries(shouldFailWith)) {
-        // Determine which step fails
         let failStepName: string | null = null
         if (group.coveredBy) {
-            // coveredBy is "stepA → stepB → stepC" — last step in the chain is where it fails
             const parts = group.coveredBy.split(' → ').map(s => s.trim())
-            failStepName = parts[0] // first in trail is the direct step in this pipeline
-        } else if (steps) {
-            // Not inherited — find which step owns this failure by matching step name in the code
-            // For non-inherited failures in a pipeline, the failure belongs to the pipeline itself
-            // We'll mark the last step as the failure point
-            failStepName = null
+            failStepName = parts[0]
         }
 
         const stepResults: Record<string, 'pass' | 'FAIL' | '--'> = {}
@@ -49,36 +43,21 @@ function buildRows(props: Props): Row[] {
                     stepResults[s] = 'pass'
                 }
             }
-            // If no specific step matched, mark all as pass (failure is at pipeline level)
             if (!failed) {
                 for (const s of stepNames) stepResults[s] = 'pass'
-                // Mark the last step as FAIL for pipeline-level failures
                 if (stepNames.length > 0) stepResults[stepNames[stepNames.length - 1]] = 'FAIL'
             }
         }
 
         if (group.examples.length > 0) {
             for (const ex of group.examples) {
-                rows.push({
-                    scenario: ex.description,
-                    description: group.description,
-                    outcome: code,
-                    outcomeType: 'fail',
-                    stepResults: { ...stepResults },
-                })
+                rows.push({ scenario: ex.description, description: group.description, outcome: code, outcomeType: 'fail', stepResults: { ...stepResults } })
             }
         } else {
-            rows.push({
-                scenario: group.description,
-                description: group.description,
-                outcome: code,
-                outcomeType: 'fail',
-                stepResults: { ...stepResults },
-            })
+            rows.push({ scenario: group.description, description: group.description, outcome: code, outcomeType: 'fail', stepResults: { ...stepResults } })
         }
     }
 
-    // Success rows
     for (const [type, group] of Object.entries(shouldSucceedWith)) {
         const stepResults: Record<string, 'pass' | 'FAIL' | '--'> = {}
         if (steps) {
@@ -87,26 +66,22 @@ function buildRows(props: Props): Row[] {
 
         if (group.examples.length > 0) {
             for (const ex of group.examples) {
-                rows.push({
-                    scenario: ex.description,
-                    description: group.description,
-                    outcome: type,
-                    outcomeType: 'success',
-                    stepResults: { ...stepResults },
-                })
+                rows.push({ scenario: ex.description, description: group.description, outcome: type, outcomeType: 'success', stepResults: { ...stepResults } })
             }
         } else {
-            rows.push({
-                scenario: group.description,
-                description: group.description,
-                outcome: type,
-                outcomeType: 'success',
-                stepResults: { ...stepResults },
-            })
+            rows.push({ scenario: group.description, description: group.description, outcome: type, outcomeType: 'success', stepResults: { ...stepResults } })
         }
     }
 
     return rows
+}
+
+function cellColor(result: 'pass' | 'FAIL' | '--'): string {
+    switch (result) {
+        case 'pass': return 'green'
+        case 'FAIL': return 'red'
+        case '--': return 'gray'
+    }
 }
 
 export function DecisionTable(props: Props) {
@@ -118,86 +93,39 @@ export function DecisionTable(props: Props) {
 
     return (
         <div style={{ overflowX: 'auto' }}>
-            <table style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: 12,
-                fontFamily: 'monospace',
-            }}>
-                <thead>
-                    <tr>
-                        <th style={thStyle}>Scenario</th>
+            <Table fz="xs" ff="monospace" horizontalSpacing="xs" verticalSpacing={4}>
+                <Table.Thead>
+                    <Table.Tr>
+                        <Table.Th>Scenario</Table.Th>
                         {isPipeline && stepNames.map(s => (
-                            <th key={s} style={{ ...thStyle, textAlign: 'center', minWidth: 70 }}>{s}</th>
+                            <Table.Th key={s} ta="center" miw={70}>{s}</Table.Th>
                         ))}
-                        <th style={{ ...thStyle, textAlign: 'center', minWidth: 100 }}>Outcome</th>
-                    </tr>
-                </thead>
-                <tbody>
+                        <Table.Th ta="center" miw={100}>Outcome</Table.Th>
+                    </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
                     {rows.map((row, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid #21262d' }}>
-                            <td style={{
-                                ...tdStyle,
-                                maxWidth: 300,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                color: '#c9d1d9',
-                                fontFamily: 'system-ui, sans-serif',
-                            }}>
-                                {row.scenario}
-                            </td>
+                        <Table.Tr key={i}>
+                            <Table.Td maw={300} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <Text size="xs" ff="var(--mantine-font-family)">{row.scenario}</Text>
+                            </Table.Td>
                             {isPipeline && stepNames.map(s => {
                                 const result = row.stepResults[s]
                                 return (
-                                    <td key={s} style={{ ...tdStyle, textAlign: 'center' }}>
-                                        <span style={{
-                                            fontSize: 10,
-                                            fontWeight: 600,
-                                            padding: '2px 6px',
-                                            borderRadius: 3,
-                                            ...cellColors(result),
-                                        }}>
-                                            {result}
-                                        </span>
-                                    </td>
+                                    <Table.Td key={s} ta="center">
+                                        <Badge size="xs" variant="light" color={cellColor(result)}>{result}</Badge>
+                                    </Table.Td>
                                 )
                             })}
-                            <td style={{ ...tdStyle, textAlign: 'center' }}>
-                                <span style={{
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    color: row.outcomeType === 'fail' ? '#f85149' : '#7ee787',
-                                }}>
+                            <Table.Td ta="center">
+                                <Text size="xs" fw={600} c={row.outcomeType === 'fail' ? 'red' : 'green'} ff="monospace">
                                     {row.outcome}
-                                </span>
-                            </td>
-                        </tr>
+                                </Text>
+                            </Table.Td>
+                        </Table.Tr>
                     ))}
-                </tbody>
-            </table>
+                </Table.Tbody>
+            </Table>
         </div>
     )
-}
-
-function cellColors(result: 'pass' | 'FAIL' | '--'): React.CSSProperties {
-    switch (result) {
-        case 'pass': return { background: '#1a3a2a', color: '#7ee787' }
-        case 'FAIL': return { background: '#3d1f1f', color: '#f85149' }
-        case '--': return { background: 'transparent', color: '#484f58' }
-    }
-}
-
-const thStyle: React.CSSProperties = {
-    padding: '8px 10px',
-    textAlign: 'left',
-    color: '#8b949e',
-    fontWeight: 600,
-    fontSize: 11,
-    borderBottom: '2px solid #30363d',
-    whiteSpace: 'nowrap',
-}
-
-const tdStyle: React.CSSProperties = {
-    padding: '6px 10px',
 }

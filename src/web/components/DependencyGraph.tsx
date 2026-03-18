@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSpecRevision } from '../hooks/useSpecRevision'
+import { Group, Text, Loader, ColorSwatch, useMantineTheme, useMantineColorScheme } from '@mantine/core'
+import { useDiagramColors } from '../hooks/useDiagramColors'
 import type { Core } from 'cytoscape'
 
 type GraphNode = { id: string; name: string; specPath: string; domain: string; edgeCount: number }
 type GraphEdge = { source: string; target: string | null; stepName: string; type: string }
 type GraphData = { nodes: GraphNode[]; edges: GraphEdge[] }
 
-// Domain colors — distinct hues for subgraph grouping
 const DOMAIN_COLORS: Record<string, string> = {}
 const PALETTE = ['#58a6ff', '#f78166', '#7ee787', '#d2a8ff', '#79c0ff', '#ffa657', '#ff7b72', '#a5d6ff']
 let colorIdx = 0
@@ -28,6 +29,8 @@ export function DependencyGraph({ onSelectSpec, onSpecCount }: {
     const [loading, setLoading] = useState(true)
     const [domains, setDomains] = useState<string[]>([])
     const revision = useSpecRevision()
+    const theme = useMantineTheme()
+    const { colorScheme } = useMantineColorScheme()
 
     useEffect(() => {
         fetch('/api/graph')
@@ -48,7 +51,15 @@ export function DependencyGraph({ onSelectSpec, onSpecCount }: {
     useEffect(() => {
         if (!data || !containerRef.current) return
 
-        // Dynamic import to avoid SSR issues
+        const isDark = colorScheme === 'dark'
+        const borderColor = isDark ? theme.colors.dark[4] : theme.colors.gray[4]
+        const surfaceBg = isDark ? theme.colors.dark[7] : theme.colors.gray[0]
+        const textColor = isDark ? theme.colors.gray[3] : theme.colors.dark[7]
+        const mutedText = isDark ? theme.colors.dark[2] : theme.colors.gray[6]
+        const edgeMuted = isDark ? theme.colors.dark[3] : theme.colors.gray[5]
+        const highlightBorder = isDark ? theme.colors.gray[0] : theme.colors.dark[9]
+        const greenEdge = theme.colors.green[5]
+
         Promise.all([
             import('cytoscape'),
             import('cytoscape-dagre'),
@@ -58,10 +69,7 @@ export function DependencyGraph({ onSelectSpec, onSpecCount }: {
 
             cytoscape.use(dagre)
 
-            // Build elements — compound nodes for domains
             const elements: any[] = []
-
-            // Domain parent nodes
             const domainSet = new Set(data.nodes.map(n => n.domain))
             for (const domain of domainSet) {
                 elements.push({
@@ -70,31 +78,17 @@ export function DependencyGraph({ onSelectSpec, onSpecCount }: {
                 })
             }
 
-            // Spec nodes
             for (const node of data.nodes) {
                 elements.push({
-                    data: {
-                        id: node.id,
-                        label: node.name,
-                        parent: `domain_${node.domain}`,
-                        domain: node.domain,
-                        specName: node.name,
-                        edgeCount: node.edgeCount,
-                    },
+                    data: { id: node.id, label: node.name, parent: `domain_${node.domain}`, domain: node.domain, specName: node.name, edgeCount: node.edgeCount },
                     classes: node.edgeCount > 0 ? 'composed' : 'atomic',
                 })
             }
 
-            // Edges — only those with resolved targets
             for (const edge of data.edges) {
                 if (!edge.target) continue
                 elements.push({
-                    data: {
-                        source: edge.source,
-                        target: edge.target,
-                        label: edge.stepName,
-                        edgeType: edge.type,
-                    },
+                    data: { source: edge.source, target: edge.target, label: edge.stepName, edgeType: edge.type },
                 })
             }
 
@@ -105,139 +99,98 @@ export function DependencyGraph({ onSelectSpec, onSpecCount }: {
                     {
                         selector: 'node.composed',
                         style: {
-                            'background-color': (ele: any) => domainColor(ele.data('domain')),
+                            'shape': 'roundrectangle',
+                            'background-color': surfaceBg,
+                            'border-color': (ele: any) => domainColor(ele.data('domain')),
+                            'border-width': 1.5,
                             'label': 'data(label)',
-                            'text-valign': 'center',
-                            'text-halign': 'center',
-                            'color': '#fff',
-                            'font-size': 10,
-                            'font-weight': 600,
-                            'width': 30,
-                            'height': 30,
-                            'border-width': 2,
-                            'border-color': '#30363d',
+                            'text-valign': 'center', 'text-halign': 'center',
+                            'color': textColor,
+                            'font-size': 10, 'font-weight': 600, 'font-family': 'monospace',
+                            'width': 'label', 'height': 'label',
+                            'padding': '10px',
                         },
                     },
                     {
                         selector: 'node.atomic',
                         style: {
-                            'background-color': (ele: any) => domainColor(ele.data('domain')),
-                            'label': 'data(label)',
-                            'text-valign': 'center',
-                            'text-halign': 'center',
-                            'color': '#fff',
-                            'font-size': 9,
-                            'width': 24,
-                            'height': 24,
-                            'opacity': 0.8,
+                            'shape': 'roundrectangle',
+                            'background-color': surfaceBg,
+                            'border-color': (ele: any) => domainColor(ele.data('domain')),
                             'border-width': 1,
-                            'border-color': '#30363d',
+                            'label': 'data(label)',
+                            'text-valign': 'center', 'text-halign': 'center',
+                            'color': textColor,
+                            'font-size': 9, 'font-family': 'monospace',
+                            'opacity': 0.85,
+                            'width': 'label', 'height': 'label',
+                            'padding': '8px',
                         },
                     },
                     {
                         selector: 'node.domain',
                         style: {
-                            'background-color': '#161b22',
-                            'background-opacity': 0.6,
-                            'border-width': 1,
-                            'border-color': '#30363d',
-                            'label': 'data(label)',
-                            'text-valign': 'top',
-                            'text-halign': 'center',
-                            'color': '#8b949e',
-                            'font-size': 11,
-                            'font-weight': 600,
-                            'padding': '20px',
+                            'background-color': surfaceBg, 'background-opacity': 0.4,
+                            'border-width': 1, 'border-color': borderColor,
+                            'shape': 'roundrectangle',
+                            'label': 'data(label)', 'text-valign': 'top', 'text-halign': 'center',
+                            'color': mutedText, 'font-size': 11, 'font-weight': 600, 'padding': '20px',
                         },
                     },
                     {
                         selector: 'edge',
                         style: {
-                            'width': 1.5,
-                            'line-color': '#30363d',
-                            'target-arrow-color': '#30363d',
-                            'target-arrow-shape': 'triangle',
-                            'curve-style': 'bezier',
-                            'label': 'data(label)',
-                            'font-size': 8,
-                            'color': '#484f58',
-                            'text-rotation': 'autorotate',
-                            'text-margin-y': -8,
+                            'width': 1.5, 'line-color': borderColor, 'target-arrow-color': borderColor,
+                            'target-arrow-shape': 'triangle', 'curve-style': 'bezier',
+                            'label': 'data(label)', 'font-size': 8, 'color': edgeMuted,
+                            'text-rotation': 'autorotate', 'text-margin-y': -8,
                         },
                     },
                     {
                         selector: 'edge[edgeType="dep"]',
-                        style: {
-                            'line-style': 'dashed',
-                            'line-dash-pattern': [6, 3],
-                            'line-color': '#484f58',
-                            'target-arrow-color': '#484f58',
-                        },
+                        style: { 'line-style': 'dashed', 'line-dash-pattern': [6, 3], 'line-color': edgeMuted, 'target-arrow-color': edgeMuted },
                     },
                     {
                         selector: 'edge[edgeType="safe-dep"]',
-                        style: {
-                            'line-color': '#7ee787',
-                            'target-arrow-color': '#7ee787',
-                        },
+                        style: { 'line-color': greenEdge, 'target-arrow-color': greenEdge },
                     },
                     {
                         selector: 'node:active, node:selected',
-                        style: {
-                            'border-color': '#f0f6fc',
-                            'border-width': 3,
-                        },
+                        style: { 'border-color': highlightBorder, 'border-width': 3 },
                     },
                 ],
-                layout: {
-                    name: 'dagre',
-                    rankDir: 'LR',
-                    nodeSep: 60,
-                    rankSep: 100,
-                    padding: 30,
-                } as any,
-                minZoom: 0.2,
-                maxZoom: 3,
+                layout: { name: 'dagre', rankDir: 'TB', nodeSep: 60, rankSep: 80, padding: 30 } as any,
+                minZoom: 0.2, maxZoom: 3,
             })
 
-            // Click handler
             cy.on('tap', 'node.composed, node.atomic', (evt) => {
                 const specName = evt.target.data('specName')
                 if (specName) {
-                    // Find the exportName from the spec data
                     fetch(`/api/specs`)
                         .then(r => r.json())
                         .then(data => {
-                            const spec = data.specs.find((s: any) =>
-                                s.modulePath.includes(specName)
-                            )
+                            const spec = data.specs.find((s: any) => s.modulePath.includes(specName))
                             if (spec) onSelectSpec(spec.exportName)
                         })
                 }
             })
 
-            // Hover effects
             cy.on('mouseover', 'node.composed, node.atomic', (evt) => {
-                evt.target.style('border-color', '#f0f6fc')
+                evt.target.style('border-color', highlightBorder)
                 evt.target.style('border-width', 3)
                 containerRef.current!.style.cursor = 'pointer'
-                // Highlight connected edges
-                evt.target.connectedEdges().style({
-                    'line-color': '#58a6ff',
-                    'target-arrow-color': '#58a6ff',
-                    'width': 2.5,
-                })
+                evt.target.connectedEdges().style({ 'line-color': theme.colors.blue[5], 'target-arrow-color': theme.colors.blue[5], 'width': 2.5 })
             })
             cy.on('mouseout', 'node.composed, node.atomic', (evt) => {
-                evt.target.style('border-color', '#30363d')
-                evt.target.style('border-width', evt.target.hasClass('composed') ? 2 : 1)
+                evt.target.style('border-color', domainColor(evt.target.data('domain')))
+                evt.target.style('border-width', evt.target.hasClass('composed') ? 1.5 : 1)
                 containerRef.current!.style.cursor = 'default'
                 evt.target.connectedEdges().forEach((edge: any) => {
                     const isDepEdge = edge.data('edgeType') === 'dep'
                     const isSafeDep = edge.data('edgeType') === 'safe-dep'
                     edge.style({
-                        'line-color': isSafeDep ? '#7ee787' : isDepEdge ? '#484f58' : '#30363d',
-                        'target-arrow-color': isSafeDep ? '#7ee787' : isDepEdge ? '#484f58' : '#30363d',
+                        'line-color': isSafeDep ? greenEdge : isDepEdge ? edgeMuted : borderColor,
+                        'target-arrow-color': isSafeDep ? greenEdge : isDepEdge ? edgeMuted : borderColor,
                         'width': 1.5,
                     })
                 })
@@ -246,48 +199,32 @@ export function DependencyGraph({ onSelectSpec, onSpecCount }: {
             cyRef.current = cy
         })
 
-        return () => {
-            cyRef.current?.destroy()
-        }
-    }, [data])
+        return () => { cyRef.current?.destroy() }
+    }, [data, colorScheme])
 
-    if (loading) {
-        return <div style={{ padding: 32, color: '#8b949e' }}>Loading dependency graph...</div>
-    }
+    if (loading) return <Group p="xl"><Loader size="sm" /><Text c="dimmed">Loading dependency graph...</Text></Group>
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Legend */}
-            <div style={{
-                padding: '8px 16px',
-                borderBottom: '1px solid #30363d',
-                display: 'flex',
-                gap: 16,
-                alignItems: 'center',
-                fontSize: 12,
-                color: '#8b949e',
-                flexShrink: 0,
-            }}>
-                <span style={{ fontWeight: 600, color: '#c9d1d9' }}>Dependency Graph</span>
+            <Group px="md" py="xs" gap="md"
+                style={{ borderBottom: '1px solid var(--mantine-color-default-border)', flexShrink: 0 }}
+            >
+                <Text fw={600} size="sm">Dependency Graph</Text>
                 {domains.map(d => (
-                    <span key={d} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{
-                            width: 10, height: 10, borderRadius: '50%',
-                            background: domainColor(d), display: 'inline-block',
-                        }} />
-                        {d}
-                    </span>
+                    <Group key={d} gap={4}>
+                        <ColorSwatch size={10} color={domainColor(d)} />
+                        <Text size="xs" c="dimmed">{d}</Text>
+                    </Group>
                 ))}
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 16, borderTop: '2px solid #7ee787', display: 'inline-block' }} />
-                    safe-dep
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 16, borderTop: '2px dashed #484f58', display: 'inline-block' }} />
-                    dep
-                </span>
-            </div>
-            {/* Graph container */}
+                <Group gap={4}>
+                    <span style={{ width: 16, borderTop: `2px solid ${theme.colors.green[5]}`, display: 'inline-block' }} />
+                    <Text size="xs" c="dimmed">safe-dep</Text>
+                </Group>
+                <Group gap={4}>
+                    <span style={{ width: 16, borderTop: `2px dashed ${theme.colors.dark[3]}`, display: 'inline-block' }} />
+                    <Text size="xs" c="dimmed">dep</Text>
+                </Group>
+            </Group>
             <div ref={containerRef} style={{ flex: 1 }} />
         </div>
     )

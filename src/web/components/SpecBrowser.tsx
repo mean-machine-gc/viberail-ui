@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSpecRevision } from '../hooks/useSpecRevision'
+import { TextInput, Text, Badge, Group, Collapse, UnstyledButton, Loader, Stack } from '@mantine/core'
+import { MagnifyingGlass, CaretDown, CaretRight } from '@phosphor-icons/react'
 
 type SerializedSpec = {
     exportName: string
@@ -45,7 +47,7 @@ export function SpecBrowser({ onSelectSpec }: { onSelectSpec: (name: string) => 
             .catch(() => setLoading(false))
     }, [revision])
 
-    if (loading) return <div style={{ padding: 32, color: '#8b949e' }}>Loading specs...</div>
+    if (loading) return <Group p="xl"><Loader size="sm" /><Text c="dimmed">Loading specs...</Text></Group>
 
     const filtered = search
         ? specs.filter(s => s.exportName.toLowerCase().includes(search.toLowerCase()))
@@ -63,128 +65,65 @@ export function SpecBrowser({ onSelectSpec }: { onSelectSpec: (name: string) => 
 
     return (
         <div style={{ padding: 24, maxWidth: 900 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#f0f6fc', marginBottom: 16 }}>
-                Specs
-            </h2>
+            <Text fw={700} size="lg" mb="md">Specs</Text>
 
-            {/* Search */}
-            <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+            <TextInput
                 placeholder="Search specs..."
-                style={{
-                    width: '100%',
-                    maxWidth: 400,
-                    padding: '8px 12px',
-                    background: '#0d1117',
-                    border: '1px solid #30363d',
-                    borderRadius: 6,
-                    color: '#c9d1d9',
-                    fontSize: 13,
-                    marginBottom: 20,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                }}
+                leftSection={<MagnifyingGlass size={16} />}
+                value={search}
+                onChange={e => setSearch(e.currentTarget.value)}
+                maw={400}
+                mb="md"
+                size="sm"
             />
 
-            <div style={{ fontSize: 12, color: '#484f58', marginBottom: 16 }}>
+            <Text size="xs" c="dimmed" mb="md">
                 {filtered.length} spec{filtered.length !== 1 ? 's' : ''} across {groups.length} domain{groups.length !== 1 ? 's' : ''}
-            </div>
+            </Text>
 
-            {/* Domain groups */}
-            {groups.map(({ domain, specs: domainSpecs }) => {
-                const isCollapsed = collapsed.has(domain)
-                return (
-                    <div key={domain} style={{ marginBottom: 16 }}>
-                        <button
-                            onClick={() => toggleDomain(domain)}
-                            style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#58a6ff',
-                                fontSize: 14,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                padding: '6px 0',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                            }}
-                        >
-                            <span style={{
-                                display: 'inline-block',
-                                width: 12,
-                                fontSize: 10,
-                                color: '#484f58',
-                                transition: 'transform 0.15s',
-                                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                            }}>▼</span>
-                            {domain}
-                            <span style={{ fontSize: 11, color: '#484f58', fontWeight: 400 }}>
-                                ({domainSpecs.length})
-                            </span>
-                        </button>
-                        {!isCollapsed && (
-                            <div style={{
-                                marginLeft: 20,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 4,
-                                marginTop: 4,
-                            }}>
-                                {domainSpecs.map(spec => {
-                                    const failCount = Object.keys(spec.shouldFailWith).length
-                                    const successCount = Object.keys(spec.shouldSucceedWith).length
-                                    const isPipeline = !!spec.steps && spec.steps.length > 0
-                                    return (
-                                        <button
-                                            key={spec.exportName}
-                                            onClick={() => onSelectSpec(spec.exportName)}
-                                            style={{
-                                                background: 'transparent',
-                                                border: '1px solid transparent',
-                                                borderRadius: 6,
-                                                padding: '8px 12px',
-                                                cursor: 'pointer',
-                                                textAlign: 'left',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 8,
-                                                color: '#c9d1d9',
-                                                fontSize: 13,
-                                                transition: 'background 0.1s',
-                                            }}
-                                            onMouseEnter={e => {
-                                                e.currentTarget.style.background = '#161b22'
-                                                e.currentTarget.style.borderColor = '#21262d'
-                                            }}
-                                            onMouseLeave={e => {
-                                                e.currentTarget.style.background = 'transparent'
-                                                e.currentTarget.style.borderColor = 'transparent'
-                                            }}
-                                        >
-                                            <span style={{ fontFamily: 'monospace', fontWeight: 500 }}>
-                                                {spec.exportName}
-                                            </span>
-                                            <span style={{
-                                                fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                                                background: isPipeline ? '#1a3a4a' : '#21262d',
-                                                color: isPipeline ? '#58a6ff' : '#8b949e',
-                                                fontWeight: 600,
-                                            }}>
-                                                {isPipeline ? `pipeline` : 'atomic'}
-                                            </span>
-                                            <span style={{ fontSize: 10, color: '#f85149' }}>{failCount}F</span>
-                                            <span style={{ fontSize: 10, color: '#7ee787' }}>{successCount}S</span>
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                        )}
-                    </div>
-                )
-            })}
+            <Stack gap="md">
+                {groups.map(({ domain, specs: domainSpecs }) => {
+                    const isCollapsed = collapsed.has(domain)
+                    return (
+                        <div key={domain}>
+                            <UnstyledButton onClick={() => toggleDomain(domain)}>
+                                <Group gap="xs">
+                                    {isCollapsed ? <CaretRight size={14} /> : <CaretDown size={14} />}
+                                    <Text fw={600} size="sm" c="blue">{domain}</Text>
+                                    <Text size="xs" c="dimmed">({domainSpecs.length})</Text>
+                                </Group>
+                            </UnstyledButton>
+                            <Collapse in={!isCollapsed}>
+                                <Stack gap={4} ml="lg" mt="xs">
+                                    {domainSpecs.map(spec => {
+                                        const failCount = Object.keys(spec.shouldFailWith).length
+                                        const successCount = Object.keys(spec.shouldSucceedWith).length
+                                        const isPipeline = !!spec.steps && spec.steps.length > 0
+                                        return (
+                                            <UnstyledButton
+                                                key={spec.exportName}
+                                                onClick={() => onSelectSpec(spec.exportName)}
+                                                p="xs"
+                                                style={{ borderRadius: 'var(--mantine-radius-sm)' }}
+                                                className="mantine-hover"
+                                            >
+                                                <Group gap="xs">
+                                                    <Text ff="monospace" fw={500} size="sm">{spec.exportName}</Text>
+                                                    <Badge size="xs" variant="light" color={isPipeline ? 'blue' : 'gray'}>
+                                                        {isPipeline ? 'pipeline' : 'atomic'}
+                                                    </Badge>
+                                                    <Text size="xs" c="red">{failCount}F</Text>
+                                                    <Text size="xs" c="green">{successCount}S</Text>
+                                                </Group>
+                                            </UnstyledButton>
+                                        )
+                                    })}
+                                </Stack>
+                            </Collapse>
+                        </div>
+                    )
+                })}
+            </Stack>
         </div>
     )
 }
