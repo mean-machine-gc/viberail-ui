@@ -1,6 +1,6 @@
 {
   "name": "viberail-ui",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Interactive visual workbench for viberail specifications",
   "type": "module",
   "license": "MIT",
